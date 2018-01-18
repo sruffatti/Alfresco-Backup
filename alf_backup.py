@@ -12,35 +12,48 @@ Alter the alfrescoRoot variable to contain the current name of the alfresco dir.
 """
 
 import os
+import datetime
 
 #Base directory
-currentWorkingDirectory = os.getcwd() #'./scripts'
+currentWorkingDirectory = os.getcwd() #'home/alfresco/scripts'
+
+#Time stamp
+timeStamp = datetime.datetime.now().strftime('%m-%d-%Y')
 
 #Configure Paths
-optDir  = '/opt'
-alfrescoRoot = optDir + '/alfresco-community'
+homeDir  = '/home'
+userDir = homeDir + '/alfresco'
+alfrescoRoot = userDir + '/alfresco-community'
 dirRoot = alfrescoRoot + '/alf_data'
 contentStorePath = dirRoot + '/contentstore'
 postgresDatabasePath = alfrescoRoot + '/postgresql/bin'
-databaseBackupPath = optDir + '/backup'
 
 #Postgresql Variables
 pgHost = '127.0.0.1'
 pgPort = '5432'
-pgUser = 'alfresco'
-pgTargetDir = './scripts'
+pgUser = 'postgres'
+pgPasswd = 'mhc123'
+pgBaseDir = userDir + '/alfresco-backup/'
+pgTargetDir = pgBaseDir + timeStamp
+pgFileName = pgTargetDir + '/dumped.sql'
 
 #Terminal commands
-sudoSession = 'sudo -s'
-stopTomcatCommand = 'sudo ./alfresco.sh stop tomcat'
-startTomcatCommand = 'sudo ./alfresco.sh start tomcat'
-# 'sudo pg_dumpall -c -h 127.0.0.1 -p 5432 -U alfresco -f /opt/backup/pg_dumpall.sql'
-pgDumpCommand = 'sudo pg_dumpall -c -h '+ pgHost +' -p '+ pgPort +' -U '+ pgUser +' -f '+ pgTargetDir 
+stopTomcatCommand = './alfresco.sh stop tomcat'
+startTomcatCommand = './alfresco.sh start tomcat'
+# 'sudo pg_dumpall -c -h 127.0.0.1 -p 5432 -U alfresco -f /home/alfresco/alfresco-backup/<time-stamp>/dumped.sql'
+pgDumpCommand = 'PGPASSWORD =' + pgPasswd + 'pg_dumpall -c -h '+ pgHost +' -p '+ pgPort +' -U '+ pgUser +' -f '+ pgFileName  
 
 #Stop Tomcat Services
-os.chdir(alfrescoRoot) # /opt/alfresco-community'
+os.chdir(alfrescoRoot) # home/alfresco/alfresco-community'
 print('*****...STOPPING Tomcat services...*****')
 os.system(stopTomcatCommand)
 print('*****...Tomcat services stopped...*****')
+
+#Build time stamp directory
+print('******... CREATING TIME STAMP DIRECTORY...*****')
+os.chdir(pgBaseDir)
+os.mkdir(timeStamp)
+
 #Postgres Dump 
 os.chdir(postgresDatabasePath)
+os.system(pgDumpCommand)
