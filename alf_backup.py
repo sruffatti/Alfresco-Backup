@@ -10,12 +10,15 @@ to install run: 'sudo apt-get install postgresql-9.1' or current version'
 
 import os
 import datetime
+import shutil
+import tarfile
 
 #Base directory
 currentWorkingDirectory = os.getcwd() #'home/alfresco/scripts'
 
 #Time stamp
-timeStamp = datetime.datetime.now().strftime('%m-%d-%Y')
+timeStampDir = datetime.datetime.now().strftime('%Y%m%d')
+timeStampDB = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
 #Configure Paths
 homeDir  = '/home'
@@ -31,8 +34,9 @@ pgPort = '5432'
 pgUser = 'postgres'
 pgPasswd = '\"mhc123\"'
 pgBackupDir = userDir + '/alfresco-backup/'
-pgTargetDir = pgBackupDir + timeStamp
-pgFileName = pgTargetDir + '/database ' + timeStamp + '.sql'
+pgTargetDir = pgBackupDir + timeStampDir +"/"
+pgTargetDirContentStore = pgTargetDir + "/contentstore"
+pgFileName = pgTargetDir + timeStampDB + '.sql'
 
 #Terminal commands
 stopTomcatCommand = './alfresco.sh stop tomcat'
@@ -42,40 +46,51 @@ pgDumpCommand = 'PGPASSWORD=' + pgPasswd + ' pg_dumpall -c -h '+ pgHost +' -p '+
 
 #Stop Tomcat Services
 os.chdir(alfrescoRoot) # home/alfresco/alfresco-community'
-print('*****...STOPPING Tomcat services...*****')
 os.system(stopTomcatCommand)
-print('*****...Tomcat services stopped...*****')
+print('\tTomcat services stopped')
 
 #Build time stamp directory
-print('******... CREATING TIME STAMP DIRECTORY...*****')
+print('\tCreating time stamp directory')
 os.chdir(pgBackupDir)
 if not os.path.exists(pgTargetDir):
-    os.mkdir(timeStamp)
-print('******... TIME STAMP DIRECTORY CREATED ...******')
+    os.mkdir(timeStampDir)
+    
+#Check for time Stamp DB before 
+try:
+    os.remove(pgFileName)
+except OSError:
+    pass
 
 #Postgres Dump 
-print('*****... CHANGING TO /postgresql/bin FOLDER...******')
 os.chdir(postgresDatabasePath)
-print('*****... RUNNING PG_DUMPALL COMMAND...******')
+print('\tRunning pg_dumpall command')
 os.system(pgDumpCommand)
-print('******... Databases were dumped...******')
+print('\tDatabases were dumped')
 
 #Copy alfresco data folder to target folder
-print('*****... CHANGING TO /alfresco-community/alf_data FOLDER...******')
 os.chdir(dirRoot)
-
+print('\tCopying contentstore folder to target directory')
+contentStore = './contentstore'
+shutil.copytree(contentStore, pgTargetDirContentStore)
 
 #Tar gzip target folder.
-print('******... CHANGING TO TARGET DIRECTORY...******')
-os.chdir(pgTargetDir)
-print('******... ZIPPING TARGET DIRECTORY...******')
+os.chdir(pgBackupDir)
+print('\tTar zipping target directory')
+currDir = './' + timeStampDir
+zippedFile = timeStampDB + '.tar.gz'
+tar = tarfile.open(zippedFile, 'w:gz')
+tar.add(currDir)
+tar.close()
+
+#Remove unzipped directory and all of its contents
+shutil.rmtree(currDir)
 
 #Start Tomcat services
-print('******...STARTING Tomcat services...******')
+print('\tStarting tomcat services')
 os.chdir(alfrescoRoot)
 os.system(startTomcatCommand)
-print('******...Tomcat services started...******')
-print('******...Alfresco backup was successful...******')
+print('\tTomcat services started')
+print('\tAlfresco backup successful')
 
 
 
