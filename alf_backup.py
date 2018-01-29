@@ -35,8 +35,8 @@ pgFile = pgTargetDir + timeStampDB + '.sql'
 #Postgresql pg_dumpall Variables
 pgHost = 'localhost'
 pgPort = '5432'
-pgUser = 'postgres'
-pgPasswd = '\"mhc123\"'
+pgUser = 
+pgPasswd =
 
 
 #Terminal commands
